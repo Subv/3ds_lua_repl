@@ -36,7 +36,7 @@ auto TupleFromArray(RetT ret, std::array<T, N>& arr) {
     return detail::TupleFromArrayImpl(ret, arr, Indices{});
 }
 
-template< typename... InArgs>
+template<typename... InArgs>
 struct ArrayApplier {
     template<typename Func, typename T, std::size_t N, typename Indices = std::make_index_sequence<N>>
     auto Apply(Func func, std::array<T, N>& arr, InArgs... in_args) {
@@ -46,7 +46,7 @@ struct ArrayApplier {
 private:
     template<typename Func, typename Array, std::size_t... Indices>
     auto ApplyImpl(Func func, Array& arr, std::index_sequence<Indices...>, InArgs... in_args) {
-        return func(arr[Indices]..., in_args...);
+        return func(&arr[Indices]..., in_args...);
     }
 };
 
@@ -54,15 +54,9 @@ template<typename Func, int NumOutArgs, typename... InArgs>
 auto Wrap(Func fun) {
     return [=](InArgs... in_args) {
         std::array<uint32_t, NumOutArgs> out_args;
-        std::array<uint32_t*, NumOutArgs> out_args_addr;
-
-        for (int i = 0; i < NumOutArgs; ++i) {
-            out_args_addr[i] = &out_args[i];
-        }
 
         ArrayApplier<InArgs...> applier;
-
-        auto ret = applier.Apply(fun, out_args_addr, in_args...);
+        auto ret = applier.Apply(fun, out_args, in_args...);
         return TupleFromArray(ret, out_args);
     };
 }
